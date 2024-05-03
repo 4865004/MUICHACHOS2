@@ -1,0 +1,34 @@
+:local Interface "WAN1"; 
+/system/script run "Enable $Interface"; 
+:if ([:ping address=8.8.8.8 interface=$Interface count=5 interval=2] = 0) do={
+    :global telegramMessage "Linea $Interface No tiene Internet"; 
+    /system script run SendToTelegram; /system script run "Disable $Interface"} 
+
+
+#fibra optica number gateway = 0
+#claro gateway = 1
+
+#////////*******Check internet in WAN10**********///////
+:global InterfaceFiber "ether10";
+:global InterfaceClaro "ether8";
+/ip route set number=0 distance=1;
+:if ([:ping address=8.8.8.8 interface=$InterfaceFiber interval=2] = 0) do=[/ip route set number=0 distance=2;/ip route set number=1 distance=1;/system script run chkInCl;]else = {
+    :global ifMesseageSend 0;
+    :if ([[:put [/ip/route get number=0 distance]] = 1] = 0)[
+        :global telegramMessage "Se Habilito la Fibra NAHUALA"; 
+        /system script run SendToTelegram;
+        /ip route set number=0 distance=1;
+        /ip route set number=1 distance=2; 
+    ]
+}
+
+#//////////////********check internet Claro   chkInCl
+:local InterfaceFiber "ether10";
+:local InterfaceClaro "ether8";
+:if ([:ping address=8.8.8.8 interface=$InterfaceClaro count=5 interval=2] = 1 ) do=[
+    :if([$ifMesseageSend = 1] = 0) do=[
+        :global telegramMessage "Se desabilito la Fibra NAHUALA"; 
+        /system script run SendToTelegram;
+        :global ifMesseageSend 1;
+    ]
+]
